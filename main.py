@@ -5,47 +5,85 @@
 
 
 # import all the modules
+# try:
+#     import maya.standalone
+#     maya.standalone.initialize()
+# except:
+#     pass
 import maya.cmds as cmds
-import random
 import copy
+import random
+
+timeCtr = 0
 
 
-class MergeSortArgs:
-    def __init__(self, array, left_index, right_index):
+class Frame(object):
+    count = 0
+
+    def __init__(self, frame_number, array):
+        self.frame_number = frame_number
         self.array = copy.deepcopy(array)
+
+    def getcount(self):
+        return Frame.count
+
+    def __str__(self):
+        return "ANONYMOUS FRAME: NUMBER: " + str(self.frame_number)
+
+    def type(self):
+        return "Frame"
+
+    def getarray(self):
+        return self.array
+
+
+class MergeSortFrame(Frame):
+    def __init__(self, array, left_index, right_index, frame_number=timeCtr):
+        super(MergeSortFrame, self).__init__(frame_number, array)
         self.left_index = left_index
         self.right_index = right_index
 
     def __str__(self):
         arr = ""
-        for inst in self.array:
+        for inst in self.getarray():
             arr = arr + str(inst) + ", "
         return str.format("array: {}, left_index: {}, right_index: {}", arr, self.left_index, self.right_index)
 
+    def range(self):
+        return self.left_index, self.right_index
 
-class MergeArgs:
-    def __init__(self, array, left_index, right_index, middle):
-        self.array = copy.deepcopy(array)
+    def type(self):
+        return "MergeSort"
+
+
+class MergeFrame(Frame):
+    def __init__(self, array, left_index, right_index, middle, frame_number=timeCtr):
+        super(MergeFrame, self).__init__(frame_number, array)
         self.left_index = left_index
         self.right_index = right_index
         self.middle = middle
 
     def __str__(self):
         arr = ""
-        for inst in self.array:
+        for inst in self.getarray():
             arr = arr + str(inst) + ", "
         return str.format("array: {}, left_index: {}, right_index: {}, middle: {}", arr, self.left_index,
                           self.right_index, self.middle)
 
+    def range(self):
+        return self.left_index, self.right_index
 
-class Car:
-    def __init__(self, make, model, year):
-        self.make = make
-        self.model = model
-        self.year = year
+    def type(self):
+        return "Merge"
+
+
+class CubeDescription:
+    def __init__(self, size, id):
+        self.size = size
+        self.id = id
 
     def __str__(self):
-        return str.format("{}", self.year)
+        return str.format("pythongeneratedcube{}", self.id)
 
 
 def merge(array, left_index, right_index, middle, comparison_function):
@@ -82,27 +120,39 @@ def merge(array, left_index, right_index, middle, comparison_function):
 def merge_sort(array, left_index, right_index, comparison_function):
     if left_index >= right_index:
         return
-
+    global timeCtr
     middle = (left_index + right_index) // 2
     merge_sort(array, left_index, middle, comparison_function)
-    yields.append(MergeSortArgs(array, left_index, middle))
+    yields.append(MergeSortFrame(copy.deepcopy(array), left_index, middle, timeCtr))
+    timeCtr = timeCtr + 30
     merge_sort(array, middle + 1, right_index, comparison_function)
-    yields.append(MergeSortArgs(array, middle + 1, right_index))
+    yields.append(MergeSortFrame(copy.deepcopy(array), middle + 1, right_index, timeCtr))
+    timeCtr = timeCtr + 30
     merge(array, left_index, right_index, middle, comparison_function)
-    yields.append(MergeArgs(array, left_index, right_index, middle))
+    yields.append(MergeFrame(copy.deepcopy(array), left_index, right_index, middle, timeCtr))
+    timeCtr = timeCtr + 30
 
-
-car1 = Car("Alfa Romeo", "33 SportWagon", 1988)
-car2 = Car("Chevrolet", "Cruze Hatchback", 2011)
-car3 = Car("Corvette", "C6 Couple", 2004)
-car4 = Car("Cadillac", "Seville Sedan", 1995)
-car5 = Car("Cadillac", "Seville Sedan", 2333)
-car6 = Car("Cadillac", "Seville Sedan", 112)
-car7 = Car("Cadillac", "Seville Sedan", 33)
-car8 = Car("Cadillac", "Seville Sedan", 3123)
 
 yields = []
-array = [car1, car2, car3, car4, car5, car6, car7, car8]
-merge_sort(array, 0, len(array) - 1, lambda carA, carB: carA.year < carB.year)
-for i in yields:
-    print(i)
+cubes = dict()
+array = []
+for i in range(0, 10):
+    array.append(CubeDescription(random.uniform(0.7, 5.0), i))
+biggest = -999999999
+for i in array:
+    if i.size > biggest:
+        biggest = i.size
+
+for cube in array:
+    cubes[cube.__str__()] = cmds.polyCube(name=cube.__str__(), w=cube.size, h=cube.size, d=cube.size)
+
+merge_sort(array, 0, len(array) - 1, lambda carA, carB: carA.size < carB.size)
+for frame in yields:
+    arr = frame.getarray()
+    for i in range(0, len(arr)):
+        posX = i * (biggest + 15)
+        objs = cmds.ls(arr[i].__str__())
+        obj = objs[0]
+        time = frame.frame_number
+        cmds.setKeyframe(obj, at='tx', v=posX, t=time)
+        print(str(obj) + " " + str(posX) + " " + str(time))
