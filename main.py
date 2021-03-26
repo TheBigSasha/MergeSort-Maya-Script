@@ -5,119 +5,104 @@
 
 
 # import all the modules
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from mpl_toolkits.mplot3d import axes3d
 import maya.cmds as cmds
-import matplotlib as mp
-import numpy as np
 import random
+import copy
 
 
-# function to recursively divide the arra
-def mergesort(A, start, end):
-    if end <= start:
+class MergeSortArgs:
+    def __init__(self, array, left_index, right_index):
+        self.array = copy.deepcopy(array)
+        self.left_index = left_index
+        self.right_index = right_index
+
+    def __str__(self):
+        arr = ""
+        for inst in self.array:
+            arr = arr + str(inst) + ", "
+        return str.format("array: {}, left_index: {}, right_index: {}", arr, self.left_index, self.right_index)
+
+
+class MergeArgs:
+    def __init__(self, array, left_index, right_index, middle):
+        self.array = copy.deepcopy(array)
+        self.left_index = left_index
+        self.right_index = right_index
+        self.middle = middle
+
+    def __str__(self):
+        arr = ""
+        for inst in self.array:
+            arr = arr + str(inst) + ", "
+        return str.format("array: {}, left_index: {}, right_index: {}, middle: {}", arr, self.left_index,
+                          self.right_index, self.middle)
+
+
+class Car:
+    def __init__(self, make, model, year):
+        self.make = make
+        self.model = model
+        self.year = year
+
+    def __str__(self):
+        return str.format("{}", self.year)
+
+
+def merge(array, left_index, right_index, middle, comparison_function):
+    left_copy = array[left_index:middle + 1]
+    right_copy = array[middle + 1:right_index + 1]
+
+    left_copy_index = 0
+    right_copy_index = 0
+    sorted_index = left_index
+
+    while left_copy_index < len(left_copy) and right_copy_index < len(right_copy):
+
+        # We use the comparison_function instead of a simple comparison operator
+        if comparison_function(left_copy[left_copy_index], right_copy[right_copy_index]):
+            array[sorted_index] = left_copy[left_copy_index]
+            left_copy_index = left_copy_index + 1
+        else:
+            array[sorted_index] = right_copy[right_copy_index]
+            right_copy_index = right_copy_index + 1
+
+        sorted_index = sorted_index + 1
+
+    while left_copy_index < len(left_copy):
+        array[sorted_index] = left_copy[left_copy_index]
+        left_copy_index = left_copy_index + 1
+        sorted_index = sorted_index + 1
+
+    while right_copy_index < len(right_copy):
+        array[sorted_index] = right_copy[right_copy_index]
+        right_copy_index = right_copy_index + 1
+        sorted_index = sorted_index + 1
+
+
+def merge_sort(array, left_index, right_index, comparison_function):
+    if left_index >= right_index:
         return
 
-    mid = start + ((end - start + 1) // 2) - 1
-
-    # yield from statements have been used to yield
-    # the array from the functions
-    yield from mergesort(A, start, mid)
-    yield from mergesort(A, mid + 1, end)
-    yield from merge(A, start, mid, end)
-
-
-# function to merge the array
-def merge(A, start, mid, end):
-    merged = []
-    leftIdx = start
-    rightIdx = mid + 1
-
-    while leftIdx <= mid and rightIdx <= end:
-        if A[leftIdx] < A[rightIdx]:
-            merged.append(A[leftIdx])
-            leftIdx += 1
-        else:
-            merged.append(A[rightIdx])
-            rightIdx += 1
-
-    while leftIdx <= mid:
-        merged.append(A[leftIdx])
-        leftIdx += 1
-
-    while rightIdx <= end:
-        merged.append(A[rightIdx])
-        rightIdx += 1
-
-    for i in range(len(merged)):
-        A[start + i] = merged[i]
-        yield A
+    middle = (left_index + right_index) // 2
+    merge_sort(array, left_index, middle, comparison_function)
+    yields.append(MergeSortArgs(array, left_index, middle))
+    merge_sort(array, middle + 1, right_index, comparison_function)
+    yields.append(MergeSortArgs(array, middle + 1, right_index))
+    merge(array, left_index, right_index, middle, comparison_function)
+    yields.append(MergeArgs(array, left_index, right_index, middle))
 
 
-# function to plot bars
-def showGraph():
-    # for random unique values
-    n = 20
-    a = [i for i in range(1, n + 1)]
-    random.shuffle(a)
-    datasetName = 'Random'
+car1 = Car("Alfa Romeo", "33 SportWagon", 1988)
+car2 = Car("Chevrolet", "Cruze Hatchback", 2011)
+car3 = Car("Corvette", "C6 Couple", 2004)
+car4 = Car("Cadillac", "Seville Sedan", 1995)
+car5 = Car("Cadillac", "Seville Sedan", 2333)
+car6 = Car("Cadillac", "Seville Sedan", 112)
+car7 = Car("Cadillac", "Seville Sedan", 33)
+car8 = Car("Cadillac", "Seville Sedan", 3123)
 
-    # generator object returned by the function
-    generator = mergesort(a, 0, len(a) - 1)
-    algoName = 'Merge Sort'
-
-    # style of the chart
-    plt.style.use('fivethirtyeight')
-
-    # set colors of the bars
-    data_normalizer = mp.colors.Normalize()
-    color_map = mp.colors.LinearSegmentedColormap(
-        "my_map",
-        {
-            "red": [(0, 1.0, 1.0),
-                    (1.0, .5, .5)],
-            "green": [(0, 0.5, 0.5),
-                      (1.0, 0, 0)],
-            "blue": [(0, 0.50, 0.5),
-                     (1.0, 0, 0)]
-        }
-    )
-
-    fig, ax = plt.subplots()
-
-    # bar container
-    bar_rects = ax.bar(range(len(a)), a, align="edge",
-                       color=color_map(data_normalizer(range(n))))
-
-    # setting the limits of x and y axes
-    ax.set_xlim(0, len(a))
-    ax.set_ylim(0, int(1.1 * len(a)))
-    ax.set_title("ALGORITHM : " + algoName + "\n" + "DATA SET : " + datasetName,
-                 fontdict={'fontsize': 13, 'fontweight': 'medium',
-                           'color': '#E4365D'})
-
-    # the text to be shown on the upper left
-    # indicating the number of iterations
-    # transform indicates the position with
-    # relevance to the axes coordinates.
-    text = ax.text(0.01, 0.95, "", transform=ax.transAxes,
-                   color="#E4365D")
-    iteration = [0]
-
-    def animate(A, rects, iteration):
-        for rect, val in zip(rects, A):
-            # setting the size of each bar equal
-            # to the value of the elements
-            rect.set_height(val)
-        iteration[0] += 1
-        text.set_text("iterations : {}".format(iteration[0]))
-
-    # call animate function repeatedly
-    anim = FuncAnimation(fig, func=animate,
-                         fargs=(bar_rects, iteration), frames=generator, interval=50,
-                         repeat=False)
-    plt.show()
-
-
-showGraph()
+yields = []
+array = [car1, car2, car3, car4, car5, car6, car7, car8]
+merge_sort(array, 0, len(array) - 1, lambda carA, carB: carA.year < carB.year)
+for i in yields:
+    print(i)
